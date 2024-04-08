@@ -183,7 +183,7 @@ class ESN(nn.Module):
             else:
                 batch_size = output.size(1)
 
-                X = torch.ones(target.size(0), 1 + output.size(2), device=target.device)
+                X = torch.ones(target.size(0), 1 + output.size(2))
                 row = 0
                 for s in range(batch_size):
                     if self.output_steps == 'all':
@@ -211,7 +211,7 @@ class ESN(nn.Module):
                     idx = s > 1e-15  # same default value as scipy.linalg.pinv
                     s_nnz = s[idx][:, None]
                     UTy = torch.mm(U.t(), target)
-                    d = torch.zeros(s.size(0), 1, device=X.device)
+                    d = torch.zeros(s.size(0), 1)
                     d[idx] = s_nnz / (s_nnz ** 2 + self.lambda_reg)
                     d_UT_y = d * UTy
                     W = torch.mm(V, d_UT_y).t()
@@ -236,15 +236,14 @@ class ESN(nn.Module):
         if self.readout_training == 'cholesky':
             W = torch.linalg.solve(self.XTy,
                                    self.XTX + self.lambda_reg * torch.eye(
-                                       self.XTX.size(0), device=self.XTX.device))[0].t()
+                                       self.XTX.size(0))[0])
             self.XTX = None
             self.XTy = None
 
             self.readout.bias = nn.Parameter(W[:, 0])
             self.readout.weight = nn.Parameter(W[:, 1:])
         elif self.readout_training == 'inv':
-            I = (self.lambda_reg * torch.eye(self.XTX.size(0))).to(
-                self.XTX.device)
+            I = (self.lambda_reg * torch.eye(self.XTX.size(0)))
             A = self.XTX + I
             X_rank = torch.linalg.matrix_rank(A).item()
 

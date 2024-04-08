@@ -1,8 +1,13 @@
+import os
+
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
 import torch.nn
 import numpy as np
 from torchesn.nn import ESN
 from torchesn import utils
 import time
+import matplotlib.pyplot as plt
 
 device = torch.device('cuda')
 dtype = torch.double
@@ -14,8 +19,10 @@ elif dtype == torch.float:
     data = np.loadtxt('datasets/mg17.csv', delimiter=',', dtype=np.float32)
 X_data = np.expand_dims(data[:, [0]], axis=1)
 Y_data = np.expand_dims(data[:, [1]], axis=1)
-X_data = torch.from_numpy(X_data).to(device)
-Y_data = torch.from_numpy(Y_data).to(device)
+# X_data = torch.from_numpy(X_data).to(device)
+# Y_data = torch.from_numpy(Y_data).to(device)
+X_data = torch.from_numpy(X_data)
+Y_data = torch.from_numpy(Y_data)
 
 trX = X_data[:5000]
 trY = Y_data[:5000]
@@ -34,7 +41,7 @@ if __name__ == "__main__":
     trY_flat = utils.prepare_target(trY.clone(), [trX.size(0)], washout)
 
     model = ESN(input_size, hidden_size, output_size)
-    model.to(device)
+    # model.to(device)
 
     model(trX, washout, None, trY_flat)
     model.fit()
@@ -45,3 +52,11 @@ if __name__ == "__main__":
     output, hidden = model(tsX, [0], hidden)
     print("Test error:", loss_fcn(output, tsY).item())
     print("Ended in", time.time() - start, "seconds.")
+
+    # Visualize
+    Y_test = tsY.detach().numpy()
+    ESN_test = output.detach().numpy()
+    t = np.linspace(0,1,Y_test.shape[0])
+    plt.plot(t,Y_test[:,0,0])
+    plt.plot(t,ESN_test[:,0,0])
+    plt.show(block=True)
